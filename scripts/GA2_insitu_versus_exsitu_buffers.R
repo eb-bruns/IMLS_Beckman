@@ -234,7 +234,7 @@ target_sp <- c(
     "Pinus_ponderosa","Pinus_radiata","Pinus_strobiformis","Pinus_torreyana"#,
   #"Taxus_brevifolia","Taxus_canadensis","Taxus_floridana"
 )
-sp <- 2
+sp <- 10
 
 ### START SUMMARY TABLE
 
@@ -301,6 +301,10 @@ for(sp in 1:length(target_sp)){
 		exsitu <- exsitu %>% filter(UID != "id00090649")
 	} else if(exsitu$species_name_acc[1] == "Gymnocladus dioicus"){
 		exsitu <- exsitu %>% filter(UID != "id00091548")
+	} else if(exsitu$species_name_acc[1] == "Pinus monticola"){
+		exsitu <- exsitu %>% filter(UID != "id00090886")
+	} else if(exsitu$species_name_acc[1] == "Pinus torreyana"){
+		exsitu <- exsitu %>% filter(UID != "id00090510")
 	}
 	sum(exsitu$num_indiv)
 	as.data.frame(exsitu %>% summarize(prov_type,num_indiv))
@@ -339,6 +343,31 @@ for(sp in 1:length(target_sp)){
 		insitu <- insitu %>% filter(UID != "id06121432")
 	} else if(insitu$species_name_acc[1] == "Taxus floridana"){
 		insitu <- insitu %>% filter(UID != "id06309741" & UID != "id06130496" & UID != "id06010137")
+	} else if(insitu$species_name_acc[1] == "Pinus albicaulis"){
+		insitu <- insitu %>% filter(UID != "id06256808")
+	} else if(insitu$species_name_acc[1] == "Pinus coulteri"){
+		insitu <- insitu %>% filter(UID != "id06096947" & UID != "id06262996" & UID != "id06003152" &
+			UID != "id06263103" & UID != "id06183523" & UID != "id06263090" & UID != "id06017682" &
+			UID != "id06183860")
+	} else if(insitu$species_name_acc[1] == "Pinus monticola"){
+		insitu <- insitu %>% filter(UID != "id03459557" & UID != "id06277259")
+	} else if(insitu$species_name_acc[1] == "Pinus muricata"){
+		insitu <- insitu %>% filter(UID != "id00952421" & UID != "id06149674" & UID != "id06161748" &
+			UID != "id06062431" & UID != "id06124285" & UID != "id05942324" & UID != "id06173334" &
+			UID != "id06277934" &	UID != "id06194568")
+	} else if(insitu$species_name_acc[1] == "Pinus palustris"){
+		insitu <- insitu %>% filter(UID != "id06074552" & UID != "id05951530" & UID != "id06161182" &
+			UID != "id05984243" & UID != "id06065364" & UID != "id06410210" & UID != "id03002952" &
+			UID != "id06159681" &	UID != "id02393777")
+	#} else if(insitu$species_name_acc[1] == "Pinus ponderosa"){
+	#	insitu <- insitu %>% filter(UID != "id06424851" & UID != "id06424853" & UID != "id06058712" &
+	#		UID != "id05938491" & UID != "id06174238")
+	} else if(insitu$species_name_acc[1] == "Pinus radiata"){
+		insitu <- insitu %>% filter(UID != "id06283274" & UID != "id05985685" & UID != "id06130629" &
+			UID != "id05982640")
+	} else if(insitu$species_name_acc[1] == "Pinus torreyana"){
+		insitu <- insitu %>% filter(UID != "id06009255" & UID != "id06296327" & UID != "id06123699" &
+		UID != "id06191208" & UID != "id05965234" & UID != "id06194559" & UID != "id06091283")
 	}
 	nrow(insitu)
 
@@ -410,11 +439,11 @@ for(sp in 1:length(target_sp)){
 		## Ecoregions
 		addPolygons(
 				# EPA Level III ecoregions
-			data = ecoregions_l3_clean.wgs,
-			fillColor = ~eco_pal(ecoregions_l3_clean.wgs@data$NA_L3CODE),
+			#data = ecoregions_l3_clean.wgs,
+			#fillColor = ~eco_pal(ecoregions_l3_clean.wgs@data$NA_L3CODE),
 				# EPA Level IV ecoregions
-			#data = ecoregions_l4.wgs,
-			#fillColor = ~eco_pal_l4(ecoregions_l4.wgs@data$US_L4CODE),
+			data = ecoregions_l4.wgs,
+			fillColor = ~eco_pal_l4(ecoregions_l4.wgs@data$US_L4CODE),
 			fillOpacity = 0.9, color = "#757575", weight = 1.5, opacity = 0.8) %>%
 		## U.S. states outline
 		addPolygons(data = us_states.wgs, fillColor = "transparent",
