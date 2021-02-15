@@ -42,8 +42,8 @@
 ### LIBRARIES ###
 #################
 
-my.packages <- c("leaflet","raster","sp","rgeos","dplyr","rgdal","knitr",
-	"RColorBrewer","Polychrome","rnaturalearth","cleangeo","smoothr")
+my.packages <- c("leaflet","raster","sp","rgeos","dplyr","rgdal",
+	"RColorBrewer","Polychrome","cleangeo","smoothr")
 #install.packages (my.packages) # turn on to install current versions
 lapply(my.packages, require, character.only=TRUE)
 
@@ -135,11 +135,11 @@ output_dir <- "/Volumes/GoogleDrive/My Drive/Conservation Gap Analysis"
 ### DEFINE PROJECTIONS
 
 # define initial projection of points (usually WGS 84)
-wgs.proj <- CRS("+init=epsg:4326 +proj=longlat +ellps=WGS84 +datum=WGS84
-	+no_defs +towgs84=0,0,0")
+wgs.proj <- sp::CRS(SRS_string="EPSG:4326")
+	##CRS arguments: +proj=longlat +datum=WGS84 +no_defs
 # define projection for calculations (meters must be the unit)
-aea.proj <- CRS("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-110
-	+x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m")
+aea.proj <- sp::CRS(SRS_string="EPSG:5070")
+	##CRS arguments: +proj=aea +lat_0=23 +lon_0=-96 +lat_1=29.5 +lat_2=45.5 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs
 
 ### READ IN POLYGON DATA
 
@@ -149,10 +149,12 @@ aea.proj <- CRS("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-110
 ecoregions_l4 <- readOGR(file.path(poly_dir,"us_eco_l4_state_boundaries/us_eco_l4.shp"))
 ecoregions_l4_nobound <- readOGR(file.path(poly_dir,"us_eco_l4/us_eco_l4_no_st.shp"))
 ecoregions_l4.wgs <- spTransform(ecoregions_l4_nobound,wgs.proj)
+ecoregions_l4_clean <- ecoregions_l4.wgs
 ecoregions_l4_clean <- clgeo_Clean(ecoregions_l4) # takes a long time
 ecoregions_l3 <- readOGR(file.path(poly_dir,"us_eco_l3/us_eco_l3.shp"))
 ecoregions_l3.wgs <- spTransform(ecoregions_l3,wgs.proj)
-ecoregions_l3_clean.wgs <- clgeo_Clean(ecoregions_l3.wgs)
+ecoregions_l3_clean.wgs <- ecoregions_l3.wgs
+#ecoregions_l3_clean.wgs <- clgeo_Clean(ecoregions_l3.wgs)
 	## Global (WWF)
 		# https://www.worldwildlife.org/publications/terrestrial-ecoregions-of-the-world
 #ecoregions <- readOGR(file.path(poly_dir,"official/wwf_terr_ecos.shp"))
@@ -234,7 +236,7 @@ target_sp <- c(
     "Pinus_ponderosa","Pinus_radiata","Pinus_strobiformis","Pinus_torreyana"#,
   #"Taxus_brevifolia","Taxus_canadensis","Taxus_floridana"
 )
-sp <- 10
+#sp <- 10
 
 ### START SUMMARY TABLE
 
@@ -327,9 +329,6 @@ for(sp in 1:length(target_sp)){
 				basisOfRecord != "H?" &
 			establishmentMeans != "INTRODUCED" & establishmentMeans != "MANAGED" &
 				establishmentMeans != "INVASIVE")
-	exsitu_join <- exsitu %>%
-		rename(basisOfRecord = prov_type, establishmentMeans = num_indiv)
-	insitu <- rbind(insitu,exsitu_join)
 	nrow(insitu)
 	## optionally, remove any bad in situ points manually by ID number
 	if(insitu$species_name_acc[1] == "Juglans californica"){
@@ -349,6 +348,8 @@ for(sp in 1:length(target_sp)){
 		insitu <- insitu %>% filter(UID != "id06096947" & UID != "id06262996" & UID != "id06003152" &
 			UID != "id06263103" & UID != "id06183523" & UID != "id06263090" & UID != "id06017682" &
 			UID != "id06183860")
+	} else if(insitu$species_name_acc[1] == "Pinus flexilis"){
+		insitu <- insitu %>% filter(UID != "id06068905")
 	} else if(insitu$species_name_acc[1] == "Pinus monticola"){
 		insitu <- insitu %>% filter(UID != "id03459557" & UID != "id06277259")
 	} else if(insitu$species_name_acc[1] == "Pinus muricata"){
@@ -362,14 +363,18 @@ for(sp in 1:length(target_sp)){
 	#} else if(insitu$species_name_acc[1] == "Pinus ponderosa"){
 	#	insitu <- insitu %>% filter(UID != "id06424851" & UID != "id06424853" & UID != "id06058712" &
 	#		UID != "id05938491" & UID != "id06174238")
-	} else if(insitu$species_name_acc[1] == "Pinus radiata"){
-		insitu <- insitu %>% filter(UID != "id06283274" & UID != "id05985685" & UID != "id06130629" &
-			UID != "id05982640")
-	} else if(insitu$species_name_acc[1] == "Pinus torreyana"){
-		insitu <- insitu %>% filter(UID != "id06009255" & UID != "id06296327" & UID != "id06123699" &
-		UID != "id06191208" & UID != "id05965234" & UID != "id06194559" & UID != "id06091283")
+	} else if(insitu$species_name_acc[1] == "Pinus radiata"){ #for this we are selecting points to KEEP
+		insitu <- insitu %>% filter(UID == "id06112634" | UID == "id00978725" |
+			UID == "id06283286" |	UID == "id00978678" | UID == "id06119492" | UID == "id05945553" |
+			UID == "id06008561" | UID == "id06140845" | UID == "id06073053")
+	} else if(insitu$species_name_acc[1] == "Pinus torreyana"){ #for this we are selecting points to KEEP
+		insitu <- insitu %>% filter(UID == "id05917504" | UID == "id05983808" |
+			UID == "id05914895" | UID == "id06310422")
 	}
 	nrow(insitu)
+	exsitu_join <- exsitu %>%
+		rename(basisOfRecord = prov_type, establishmentMeans = num_indiv)
+	insitu <- rbind(insitu,exsitu_join)
 
 	### CALCULATE EX SITU COVERAGE
 
