@@ -530,11 +530,16 @@ all_data11$prov_type <- ifelse(grepl(paste(
   c("cultiva","garden","nursery","^c$","^g$","^h$","horticult","purchase",
   "^c ","coll"),
   collapse = "|"), all_data11$prov_type),"H",all_data11$prov_type)
-  # unknown (U) ; everything else is unknown
+  # unknown (U)
+all_data11$prov_type <- ifelse(grepl(paste(
+  c("[u]","u","un","uncertain","u insufficent data"),
+  collapse = "|"), all_data11$prov_type),"U",all_data11$prov_type)
+  # not given (NG) ; everything else
 all_data11$prov_type <- ifelse(all_data11$prov_type!= "W" &
   all_data11$prov_type != "Z" & all_data11$prov_type != "H" &
-  all_data11$prov_type != "N","U",all_data11$prov_type)
-all_data11$prov_type[which(is.na(all_data11$prov_type))] <- "U"
+  all_data11$prov_type != "N" & all_data11$prov_type != "U",
+  "NG",all_data11$prov_type)
+all_data11$prov_type[which(is.na(all_data11$prov_type))] <- "NG"
 
 # check results
 unique(all_data11$prov_type)
@@ -809,9 +814,9 @@ all_data13 <- all_data12 %>% dplyr::select(
 str(all_data13)
 
 # write file
-#write.csv(all_data13, file.path(main_dir,"inputs",
-#  paste0("toGeolocate_exsitu_compiled_standardized_", Sys.Date(), ".csv")),
-#  row.names = F)
+write.csv(all_data13, file.path(main_dir,"inputs",
+  paste0("toGeolocate_exsitu_compiled_standardized_", Sys.Date(), ".csv")),
+  row.names = F)
 
 ##
 ## RENAME FOR GEOLOCATE AND SPLIT BY SPECIES
@@ -848,7 +853,7 @@ all_data14 <- all_data12 %>%
     latitude,longitude,
     ## record metadata
     flag,gps_det,prov_type,acc_num,lin_num,coll_num,coll_name,coll_year,
-    sum_num_indiv,
+    sum_num_indiv,germ_type,garden_loc,
     ## institituion metadata
     inst_short,filename,inst_lat,inst_long,inst_country,inst_continent,
     ## taxon name & record ID

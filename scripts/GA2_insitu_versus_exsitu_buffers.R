@@ -236,7 +236,7 @@ target_sp <- c(
     "Pinus_ponderosa","Pinus_radiata","Pinus_strobiformis","Pinus_torreyana"#,
   #"Taxus_brevifolia","Taxus_canadensis","Taxus_floridana"
 )
-#sp <- 10
+sp <- 10
 
 ### START SUMMARY TABLE
 
@@ -307,6 +307,8 @@ for(sp in 1:length(target_sp)){
 		exsitu <- exsitu %>% filter(UID != "id00090886")
 	} else if(exsitu$species_name_acc[1] == "Pinus torreyana"){
 		exsitu <- exsitu %>% filter(UID != "id00090510")
+	} else if(exsitu$species_name_acc[1] == "Pinus ponderosa"){
+		exsitu <- exsitu %>% filter(UID != "id00093121")
 	}
 	sum(exsitu$num_indiv)
 	as.data.frame(exsitu %>% summarize(prov_type,num_indiv))
@@ -360,13 +362,18 @@ for(sp in 1:length(target_sp)){
 		insitu <- insitu %>% filter(UID != "id06074552" & UID != "id05951530" & UID != "id06161182" &
 			UID != "id05984243" & UID != "id06065364" & UID != "id06410210" & UID != "id03002952" &
 			UID != "id06159681" &	UID != "id02393777")
-	#} else if(insitu$species_name_acc[1] == "Pinus ponderosa"){
-	#	insitu <- insitu %>% filter(UID != "id06424851" & UID != "id06424853" & UID != "id06058712" &
-	#		UID != "id05938491" & UID != "id06174238")
+	} else if(insitu$species_name_acc[1] == "Pinus ponderosa"){
+		insitu <- insitu %>% filter(UID != "id06424851" & UID != "id06424853" & UID != "id06058712" &
+			UID != "id05938491" & UID != "id06174238" & UID != "id06023224" & UID != "id06023771" &
+			UID != "id06318274" & UID != "id06318183" & UID != "id06025147" & UID != "id05976556" &
+		  UID != "id06399156" & UID != "id06137126" & UID != "id06188127" & UID != "id05944992" &
+			UID != "id06280667" & UID != "id06025403" & UID != "id06310161" & UID != "id00019550" &
+			UID != "id00072108" & UID != "id05986145" & UID != "id00955044" & UID != "id06190266" &
+		  UID != "id06279545" & UID != "id06025631")
 	} else if(insitu$species_name_acc[1] == "Pinus radiata"){ #for this we are selecting points to KEEP
 		insitu <- insitu %>% filter(UID == "id06112634" | UID == "id00978725" |
-			UID == "id06283286" |	UID == "id00978678" | UID == "id06119492" | UID == "id05945553" |
-			UID == "id06008561" | UID == "id06140845" | UID == "id06073053")
+			UID == "id06283286" |	UID == "id00978678" | UID == "id05945553" | UID == "id06119492" |
+			UID == "id06140845" | UID == "id06008561")
 	} else if(insitu$species_name_acc[1] == "Pinus torreyana"){ #for this we are selecting points to KEEP
 		insitu <- insitu %>% filter(UID == "id05917504" | UID == "id05983808" |
 			UID == "id05914895" | UID == "id06310422")

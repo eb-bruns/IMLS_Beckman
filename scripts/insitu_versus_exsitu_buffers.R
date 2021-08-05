@@ -145,7 +145,7 @@ map.buffers <- function(insitu,exsitu,title,radius,eco){
 # A) Read in data
 ################################################################################
 
-drive_dir <- "/Volumes/GoogleDrive/My Drive/Q_havardii_buffer_test"
+#drive_dir <- "/Volumes/GoogleDrive/My Drive/Q_havardii_buffer_test"
 local_dir <- "./Desktop/work"
 
 # define projection of points (usually WGS 84)
@@ -157,8 +157,8 @@ aea.proj <- CRS("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-110
 
 ### POINT DATA
 
-pts <- read.csv(file.path(drive_dir,"BeckHob_QHOccur_Vetted_plusExSitu.csv"),
-	as.is=T, na.strings=c("","NA"))
+pts <- read.csv(file.path(local_dir,"Q_havardii_buffer_test",
+	"BeckHob_QHOccur_Vetted_plusExSitu.csv"),as.is=T, na.strings=c("","NA"))
 insitu <- pts
 exsitu <- pts[which(!is.na(pts$ex_situ)),]
 
@@ -198,6 +198,10 @@ ecoregions <- readOGR(file.path(local_dir,
 # read in shapefile of just ecoregions
 ecoregions_nobound <- readOGR(file.path(local_dir,
 	"us_eco_l4/us_eco_l4_no_st.shp"))
+
+# read in shapefile of state boundaries
+state_bound <- readOGR(file.path(local_dir,
+	"cb_2018_us_state_20m/cb_2018_us_state_20m.shp"))
 
 ################################################################################
 # B) Calculate geographic coverage (buffer areas)
@@ -317,40 +321,6 @@ eco_pal_l4 <- colorFactor(eco_pal_colors_l4,eco_wgs@data$US_L4CODE)
 #pal <- topo.colors(length(unique(eco_inter@data$US_L4CODE)))
 #pal <- cm.colors(length(unique(eco_inter@data$US_L4CODE)))
 
-# create map for 50 km buffers
-	map <- leaflet() %>%
-		addProviderTiles("CartoDB.PositronNoLabels", #"Stamen.TonerBackground"
-			options = providerTileOptions(maxZoom = 10)) %>%
-		addPolygons(
-				# EPA Level III ecoregions
-			#data = ecoregions_l3_clean.wgs,
-			#fillColor = ~eco_pal(ecoregions_l3_clean.wgs@data$NA_L3CODE),
-				# EPA Level IV ecoregions
-			data = eco_wgs,
-			fillColor = ~eco_pal_l4(eco_wgs@data$US_L4CODE),
-			fillOpacity = 0.9, color = "#757575", weight = 1.5, opacity = 0.8) %>%
-		addPolygons(data = create.buffers(insitu,50000,wgs.proj,wgs.proj),
-			smoothFactor = 0.5,	weight = 2, color = "white", opacity = 0.9) %>%
-		addCircleMarkers(data = insitu, lng = ~longitude, lat = ~latitude,
-			popup = ~paste("In situ:", Pop),
-			radius = 4, fillOpacity = 0.9, stroke = F, color = "white") %>%
-		addPolygons(data = create.buffers(exsitu,50000,wgs.proj,wgs.proj),
-			smoothFactor = 0.5, weight = 2, color = "black", opacity = 0.9) %>%
-		addCircleMarkers(data = exsitu, lng = ~longitude, lat = ~latitude,
-			#popup = ~paste("Ex situ institution:",institution,"<br/>",
-			#	"Lat-long source:",gps_det,"<br/>","Collection year:",aqu_year,"<br/>",
-			#	"Accession number:",acc_no),
-			popup = ~paste("Ex situ:", Pop),
-			radius = 4, fillOpacity = 0.9, stroke = F, color = "black") %>%
-		addControl(title, position = "topright") %>%
-		addControl("Click on points to see more information",
-			position = "topleft") %>%
-		addLegend(labels = c("In situ","Ex situ"), colors = c("white","black"),
-			title = "Key", position = "topright", opacity = 0.9)
-	map
-
-
-
 title <- paste(
 	"<b>","Quercus havardii in situ distribution and wild
 		collection sites of ex situ accessions","<br/>","</b>",
@@ -359,24 +329,66 @@ title <- paste(
 	"Ecological coverage of ex situ collections, based on EPA Level IV
 		Ecoregions within the buffers: ", round(eco_coverage_50,2), "%",
 	sep = "")
-map_50 <- map.buffers(insitu,exsitu,title,50000,eco_inter)
+
+# create map for 50 km buffers
+	map <- leaflet() %>%
+		addProviderTiles("CartoDB.PositronNoLabels", #"Stamen.TonerBackground"
+			options = providerTileOptions(maxZoom = 10)) %>%
+		addPolygons(
+			data = state_bound,
+				# EPA Level III ecoregions
+			#data = ecoregions_l3_clean.wgs,
+			#fillColor = ~eco_pal(ecoregions_l3_clean.wgs@data$NA_L3CODE),
+				# EPA Level IV ecoregions
+			#data = eco_wgs,
+			#fillColor = ~eco_pal_l4(eco_wgs@data$US_L4CODE),
+			fillOpacity = 0, color = "#757575", weight = 1.5, opacity = 0.8) %>%
+		#leafem::addStaticLabels(
+		#	., data = state_bound,
+		#	label = state_bound@data$NAME,
+		#	style = list("font-weight"="bold","font-size"="14px")) %>%
+		addPolygons(data = create.buffers(insitu,50000,wgs.proj,wgs.proj),
+			smoothFactor = 0.5,	weight = 2, color = "red", opacity = 0.9) %>%
+		addCircleMarkers(data = insitu, lng = ~longitude, lat = ~latitude,
+			popup = ~paste("In situ:", Pop),
+			radius = 4, fillOpacity = 0.9, stroke = F, color = "red") %>%
+		addPolygons(data = create.buffers(exsitu,50000,wgs.proj,wgs.proj),
+			smoothFactor = 0.5, weight = 2, color = "blue", opacity = 0.9) %>%
+		addCircleMarkers(data = exsitu, lng = ~longitude, lat = ~latitude,
+			#popup = ~paste("Ex situ institution:",institution,"<br/>",
+			#	"Lat-long source:",gps_det,"<br/>","Collection year:",aqu_year,"<br/>",
+			#	"Accession number:",acc_no),
+			popup = ~paste("Ex situ:", Pop),
+			radius = 4, fillOpacity = 0.9, stroke = F, color = "blue") %>%
+		addControl(title, position = "topright") %>%
+		addControl("Click on points to see more information",
+			position = "topleft") %>%
+		addLegend(labels = c("In situ","Ex situ"), colors = c("red","blue"),
+			title = "Key", position = "topright", opacity = 0.9) %>%
+		addScaleBar(position = "bottomright",
+			options = scaleBarOptions(maxWidth = 150)) %>%
+		setView(-98, 40, zoom = 5)
+map
+
+
+#map_50 <- map.buffers(insitu,exsitu,title,50000,eco_inter)
 # view map
-map_50
+#map_50
 # save map
 #htmlwidgets::saveWidget(map_50, file = "Quercus_havardii_buffer_map_50km.html")
 
 # create map for 10 km buffers
-title <- paste(
-	"<b>","Quercus havardii in situ distribution and wild
-		collection sites of ex situ accessions","<br/>","</b>",
-	"Geographic coverage of ex situ collections, based on 10 kilometer
-		buffers: ", round(geo_coverage_10,2), "%" ,"<br/>",
-	"Ecological coverage of ex situ collections, based on EPA Level IV
-		Ecoregions within the buffers: ", round(eco_coverage_10,2), "%",
-	sep = "")
-map_10 <- map.buffers(insitu,exsitu,title,10000,eco_inter)
+#title <- paste(
+#	"<b>","Quercus havardii in situ distribution and wild
+#		collection sites of ex situ accessions","<br/>","</b>",
+#	"Geographic coverage of ex situ collections, based on 10 kilometer
+#		buffers: ", round(geo_coverage_10,2), "%" ,"<br/>",
+#	"Ecological coverage of ex situ collections, based on EPA Level IV
+#		Ecoregions within the buffers: ", round(eco_coverage_10,2), "%",
+#	sep = "")
+#map_10 <- map.buffers(insitu,exsitu,title,10000,eco_inter)
 # view map
-map_10
+#map_10
 # save map
 #htmlwidgets::saveWidget(map_10, file = "Quercus_havardii_buffer_map_10km.html")
 
