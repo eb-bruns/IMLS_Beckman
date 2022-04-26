@@ -3,9 +3,7 @@
 ### DESCRIPTION:
   # This script creates interactive HTML maps using the 'leaflet' package
   #   in R. With a basic understanding of leaflet functions, the scripts for
-  #   these basic maps can be easily adjusted for different uses. DataCamp
-  #   has a beginner course for leaflet:
-  #   https://www.datacamp.com/courses/interactive-maps-with-leaflet-in-r
+  #   these simple maps can be easily adjusted for different uses.
 
 ### INPUTS:
   # Any files that can be viewed spatially: points (CSV with lat-long),
@@ -19,33 +17,33 @@
 ### OUTPUTS:
   # HTML file. You view the map online at a temp address that cannot be
   #   viewed outside the desktop where you ran the script. File needs to be
-  #   hosted at your own domain for others to view the map also.
+  #   hosted online for others to view the map also.
 
 
 #################
 ### LIBRARIES ###
 #################
 
-# be sure you've installed all these libraries before trying to add them!!!
-library(leaflet)
-library(RColorBrewer)
-library(tidyverse)
-library(data.table)
-library(mapview)
-library(googledrive)
+# this little code chunk is from Shannon M Still! thanks, Shannon!
+  my.packages <- c("leaflet","RColorBrewer","tidyverse","data.table",
+                   "mapview","googledrive","rgdal")
+  # un-comment the next line to install current versions
+  #install.packages(my.packages)
+  lapply(my.packages, require, character.only=TRUE)
+    rm(my.packages)
 
 ##############
 ### SCRIPT ###
 ##############
 
-# set working directory to location where you have/will put your spatial files
-#setwd("./Desktop")
+# set working directory to location where you have your spatial files
+main_dir <- "/Users/emily/Desktop/work/"
 
 #################################
 # 1. Map with toggles for species
 #################################
 
-# you can view the final product of the following code block hhere:
+# you can view the final product of the following code block here:
 #   https://leopardshark.com/esb/oak_test_map.html
 
 # download CSV of oak distribution points (you need permission) and place
@@ -53,7 +51,7 @@ library(googledrive)
 #   https://drive.google.com/open?id=1hVJIdO49eZg_ggJnsXeLFkGGnxMWl-Oy
 
 # read in CSV of distribution points
-#df <- read.csv("all_occ_compiled_unq_all_exsitu_short.csv",as.is=T)
+df <- read.csv("all_occ_compiled_unq_all_exsitu_short.csv",as.is=T)
   str(df) # take a look at the data structure
 
 # reorder data so the ex situ points are at the top (easier to view in map)
@@ -72,8 +70,8 @@ sp <- unique(df$species)
   #  ))
 
 # create color scheme
-# take a look at options for color pre-made schemes, if needed, by running
-#   "display.brewer.all()"
+# take a look at options for color pre-made schemes, if needed, by running:
+#   display.brewer.all()
 # this scheme is for categorical (factor) variables
 palette_fix <- colorFactor(palette = c("#2cb42c","purple"),
                        levels = c("exsitu","insitu"))
@@ -191,7 +189,9 @@ map_layers()
 # create a map
 map <- df %>%
   leaflet() %>%
-  # you can add as many separate provider tiles as you wish:
+  # you can add as many separate provider tiles as you wish
+    # see different ProviderTile (background) options here:
+    #   https://leaflet-extras.github.io/leaflet-providers/preview/
   addProviderTiles(
     "CartoDB.PositronNoLabels",
     options = providerTileOptions(maxZoom = 9),
