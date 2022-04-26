@@ -1,0 +1,88 @@
+---
+title: "Shiny_App"
+author: "Lucien Fitzpatrick"
+date: "3/16/2022"
+runtime: shiny
+output:
+  html_document:
+    df_print: paged
+
+
+
+
+ADDED BY EMILY B. FOR REFERENCE:
+https://mortonarb-forestecology.shinyapps.io/phenology_status_map/
+https://github.com/MortonArb-ForestEcology/Phenology_Forecasting/tree/master/scripts/LIVE-Morton_Phenology_Forecast/MortonArb_PhenoForecast
+
+
+---
+Hello! This is a worksheet to help transfer R visualizations into a shiny app dashboard. This was originally paired with a workshop given by Shiven Shah and Lucien Fitzpatrick.
+
+Now let's practice with whatever data you are thinking of. Below I have provided shells for the server and ui as well as a space to define your global data. Fill those in and see if you can launch an app of your own!
+
+```{r echo = FALSE,  message = FALSE, warning = FALSE}
+#Load in any global variables here. If you are plotting off a single data frame (recommended) then you would load that here and use the input options to subset as you see fit.
+#install.packages("shiny")
+library(shiny)
+
+
+data <- read.csv("/Users/emily/Desktop/work/ExSitu_Compiled_Standardized_2021-06-11.csv")
+
+
+
+
+```
+
+```{r echo = TRUE,  message = FALSE, warning = FALSE}
+ui <- fluidPage( #I've given you a bit of structure with a title, sidebar, and main panel. Feel free to play around if you feel confident. You can also specify rows and columns with functions like fluidRow(column(), column())
+
+
+  titlePanel("Test"),
+
+  # Sidebar layout with input and output definitions ----
+ #sidebarLayout( #Put your Input/Selection here. Many options selectInput(), sliderTextInput(), checkboxInput(), etc.
+
+
+    # Main panel for displaying outputs ----
+    mainPanel(  #Put your outputs here. plotOutput(), textOutput()
+              textOutput("exampleText"),
+              plotOutput("examplePlot")
+
+
+    )
+  #)
+)
+
+```
+
+```{r echo = TRUE,  message = FALSE, warning = FALSE}
+#This first line is crucial and defines your server as recieving ann input and producing an output. This shoudl always be your first line
+server <- function(input, output) { #Create however many output objects you want. If you make a calculation requiring input that is complexm don't be afraid to use a reactive({})
+
+  output$exampleText <- renderText({ #Remember the name of this output needs to match what your ui says
+  })
+
+  output$examplePlot <- renderPlot({#Remember the name of this output needs to match what your ui says
+
+  })
+
+}
+
+```
+
+Let's see how you did!
+```{r echo = TRUE,  message = FALSE, warning = FALSE}
+shinyApp(ui, server)
+
+```
+
+Congratulations on going through this tutorial. This really only covered the main basics but hopefully it showed how general R usage can be translated to app creation. As I said at the top this is not the same way you would organize things for an online run but it's not especially different. The main differences is that you need the server and ui to be individual scripts that are together in a folder with your app's name. It would look something like:
+
+```{r echo = TRUE,  message = FALSE, warning = FALSE}
+#setwd("shiny_app") # Your working directory needs to contain the server and ui script as well as any data that will need to be read in
+
+#IF YOU ARE LAUNCHING AN APP ONLINE ALL THE DATA REQUIRED MUST BE IN THE FOLDER ALONGSIDE THE SERVER AND UI SCRIPT
+
+#rsconnect::deployApp(forceUpdate = T, launch.browser = F)
+
+```

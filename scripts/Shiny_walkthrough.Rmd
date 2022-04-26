@@ -1,0 +1,286 @@
+---
+title: "Shiny_App"
+author: "Lucien Fitzpatrick"
+date: "3/16/2022"
+runtime: shiny
+output:
+  html_document:
+    df_print: paged
+---
+Hello! This is a quick write up of how to convert some basic R principles into a shiny app dashboard. This was originally paired with a workshop given by Shiven Shah and Lucien Fitzpatrick. 
+
+The first thing to highlight is that this is a tutorial on how to run a local version. Converting this into something equipped to run online isn't very hard but it requires a very specific way of organizing your files and data. Since that is more an issue of interacting with the webhosting side of shiny I've decided not to cover that in this tutorial but I will give some resources/guidance at the end for those interested.
+
+First you must download and load in the "shiny" package.
+```{r echo = TRUE,  message = FALSE, warning = FALSE, eval = FALSE}
+#install.packages("shiny")
+library(shiny)
+```
+
+
+Fortunately shiny is user friendly and includes example apps you can launch as a reference. Using one of these as a reference is a great way to get an understanding of how shiny works under the hood so we are going to launch one example and dissect it. Feel free to explore other versions of these as ways to expand on ideas presented here. If you are like me and learn best by deconstructing examples than this is an invaluable resource. NOTE: IF RUNNING OUTSIDE THE DOCUMENT YOU MUST MANUALLY CLOSE THE APP TO KEEP RUNNING CODE
+
+```{r tabsets, echo=FALSE}
+shinyAppDir(
+  system.file("examples/04_mpg", package = "shiny"),
+  options = list(
+    width = "100%", height = 550
+  )
+)
+```
+
+So our example app is a fairly straightforward example of a situation where you can choose what your dependent variable is and the plot will be updated accordingly. This is the most common context most people will use shiny where you want to be able to change one or more of the inputs being given to an analysis and to see how that changes the output. I am going to go step by step through the 3 key sections of executing a script: Global data, the ui, and the server. First the global data:
+
+Your global data is all of the data you want to come loaded with your shiny app. Depending on the scale it could be reading in a single data frame as shown here or many MB's of weather data. If your data is global that means it is loaded into the app when it is first launched and NOT read in every time the app is run/updated. You never NEED data to be global but reloading data that doesn't need to be updated can really slow down an application.
+
+The key features of global data are:
+1) It is neccessary for whatever plotting/analysis you are doing 
+2) It does not require user input to define. 
+In this example while the user can define what formula we are plotting, they are not defining what data we draw from. This allows you to load all of your data at the top while the server will pull out what is input. A decent shorthand is that if your application's interactive choices are subsetting data from one dataframe, then that dataframe can be global, but if your application is choosing which dataframe to load in, then none of those dataframe should be global as you don't know which you are using until the choice is made and loading all of them would take up time and storage.
+
+
+We load the global data below:
+```{r echo = TRUE,  message = FALSE, warning = FALSE}
+mpgData <- mtcars
+mpgData$am <- factor(mpgData$am, labels = c("Automatic", "Manual"))
+
+```
+
+Now that we have loaded in our global data it's time to define our ui.
+
+The ui defines everything that the User will Interface with when they load the app. Where the text is, where the plots are, any selection buttons, etc. are all defined here. The UI makes no calculations and has no impact on the type of calculations being made by the server other than providing users a means to choose what goes into those calculations. This is analogous to the aesthetic side of ggplot.
+
+First we are looking at how to call the plot you want using the ui. Focus is on the plotOutput function
+
+```{r echo = TRUE,  message = FALSE, warning = FALSE, eval = FALSE}
+ui
+# Main panel for displaying outputs ----
+    mainPanel(  #This defines the main panel (right side in)
+
+      # Output: Formatted text for caption ----
+      h3(textOutput("caption")), #A simple textouput. This means that ui will display the text of the server object "caption"
+
+      # Output: Plot of the requested variable against mpg ----
+      plotOutput("mpgPlot") # plot output. The ui will plot the server object "mpgPlot" 
+
+    )
+
+```
+
+Second we are looking at how to define the plot you want using the server. Focus is on the renderPlot function
+```{r echo = TRUE,  message = FALSE, warning = FALSE, eval = FALSE}
+server
+# Generate a plot of the requested variable against mpg ----
+# and only exclude outliers if requested
+output$mpgPlot <- renderPlot({ #Defining our plot as an plot object with the name "mpgPLOT"
+    boxplot(as.formula(formulaText()),# Here the boxplot uses the formula provided by the input to make it's graph
+            data = mpgData,
+            outline = input$outliers, # Here they check their true false about including outliers.
+            col = "#75AADB", pch = 19)
+  })
+
+```
+
+Now let's focus on how to render the caption onto the screen and then how to make it reactive to our input.
+
+First we are looking at how to call the text you want using the ui. Same code as above but focus is on the textOutput function
+```{r echo = TRUE,  message = FALSE, warning = FALSE, eval = FALSE}
+ui
+# Main panel for displaying outputs ----
+    mainPanel(  #This defines the main panel (right side in)
+
+      # Output: Formatted text for caption ----
+      h3(textOutput("caption")), #A simple textouput. This means that ui will display the text of the server object "caption"
+
+      # Output: Plot of the requested variable against mpg ----
+      plotOutput("mpgPlot") # plot output. The ui will plot the server object "mpgPlot" 
+
+    )
+
+```
+
+And the server side simply uses a renderText function.
+```{r echo = TRUE,  message = FALSE, warning = FALSE, eval = FALSE}
+server
+  # Return the formula text for printing as a caption ----
+  output$caption <- renderText({ #This is a render statement meaning it is creating a server object to be sent to the ui. Here it is the formula equation.
+    formulaText() # This is defined later
+  })
+
+```
+
+So how did we create the "formulaText()" object that is reactive to input? 
+In the ui we need to define an input selector that
+1) Defines the variable/object name in R 
+2) Defines the name of the category users will see 
+3) The names of the options and if those names differ between the server and ui.
+```{r echo = TRUE,  message = FALSE, warning = FALSE, eval = FALSE}
+ui
+  # Sidebar layout with input and output definitions ----
+  sidebarLayout( #Using sidebarLayout is a good way to make sure the selection options are next to the plot instead of above
+
+    # Sidebar panel for inputs ----
+    sidebarPanel( #This is defining the Panel witin the sidebarLayout function. We only have one so it seems redundant but within SideBar Layout you need to define your panels.
+
+      # Input: Selector for variable to plot against mpg ----
+      # This is the key feature we are interested in!!!
+      # The first arguement defines the name of the input on the server side. This tells the server to expect an object called input$variable
+      # The secod arguement defines the Title text shown to the user "Variable:"
+      # The third arguement is the list of choices. In this case they are telling the server that if the user selects "Cylinders" that the server should read it as "cyl". This helps keep the UI readable without requiring annoying variable names in your files.
+      selectInput("variable",  "Variable:",
+                  c("Cylinders" = "cyl",
+                    "Transmission" = "am",
+                    "Gears" = "gear")),
+
+```
+
+In the server there is a reactive object that calls the input$variable and writes a formula. This formula is used as a caption and as the formula used in calculating the plots. Here is how to create a reactive object.
+```{r echo = TRUE,  message = FALSE, warning = FALSE, eval = FALSE}
+server
+ # Compute the formula text ----
+  # This is in a reactive expression since it is shared by the
+  # output$caption and output$mpgPlot functions
+  formulaText <- reactive({ #This is defining a reactive object. A reactive object is one that requires an input and will change depending on the input.
+    paste("mpg ~", input$variable)# In this case the formula this is shown changes depending on the variable of choice.
+  })
+
+```
+
+And how do we choose inputs to impact the plots? We use the same "variable" selection used to create the formula. However, this ui also allows us to include outliers in our data or not. This has been highlighted by the checkboxInput() line.
+```{r echo = TRUE,  message = FALSE, warning = FALSE, eval = FALSE}
+ui
+  # Sidebar layout with input and output definitions ----
+  sidebarLayout( #Using sidebarLayout is a good way to make sure the selection options are next to the plot instead of above
+
+    # Sidebar panel for inputs ----
+    sidebarPanel( #This is defining the Panel witin the sidebarLayout function. We only have one so it seems redundant but within SideBar Layout you need to define your panels.
+
+      # Input: Selector for variable to plot against mpg ----
+      # This is the key feature we are interested in!!!
+      # The first arguement defines the name of the input on the server side. This tells the server to expect an object called input$variable
+      # The secod arguement defines the Title text shown to the user "Variable:"
+      # The third arguement is the list of choices. In this case they are telling the server that if the user selects "Cylinders" that the server should read it as "cyl". This helps keep the UI readable without requiring annoying variable names in your files.
+      selectInput("variable",  "Variable:",
+                  c("Cylinders" = "cyl",
+                    "Transmission" = "am",
+                    "Gears" = "gear")),
+      
+      # Input: Checkbox for whether outliers should be included ----
+      # This is an additional feature of this ui that allows a choice to includes outliers or not. This will provide the server with an "input$outliers" value that will return a true or false. The default has been set to true 
+      checkboxInput("outliers", "Show outliers", TRUE)
+
+    ),
+
+```
+
+On the server side we call the "formulaText()" object defined earlier and the "input$outliers" checkbox as a TRUE/FALSE input.
+```{r echo = TRUE,  message = FALSE, warning = FALSE, eval = FALSE}
+server
+# Generate a plot of the requested variable against mpg ----
+# and only exclude outliers if requested
+output$mpgPlot <- renderPlot({
+    boxplot(as.formula(formulaText()),# Here the boxplot uses the formula provided by the input to make it's graph
+            data = mpgData,
+            outline = input$outliers, # Here they check their true false about including outliers.
+            col = "#75AADB", pch = 19)
+  })
+
+```
+
+When everything is put together, it looks like this
+```{r echo = TRUE,  message = FALSE, warning = FALSE}
+ui <- fluidPage( #fluidPage is the typical way to define a web page while giving yourself full dynamic control
+
+  # Notice that everything here is within the fluidPage function and there are commas after each entry  
+  # App title ----
+  titlePanel("Miles Per Gallon"), 
+
+  # Sidebar layout with input and output definitions ----
+  sidebarLayout( #Using sidebarLayout is a good way to make sure the selection options are next to the plot instead of above
+
+    # Sidebar panel for inputs ----
+    sidebarPanel( #This is defining the Panel witin the sidebarLayout function. We only have one so it seems redundant but within SideBar Layout you need to define your panels.
+
+      # Input: Selector for variable to plot against mpg ----
+      # This is the key feature we are interested in!!!
+      # The first arguement defines the name of the input on the server side. This tells the server to expect an object called input$variable
+      # The secod arguement defines the Title text shown to the user "Variable:"
+      # The third arguement is the list of choices. In this case they are telling the server that if the user selects "Cylinders" that the server should read it as "cyl". This helps keep the UI readable without requiring annoying variable names in your files.
+      selectInput("variable",  "Variable:",
+                  c("Cylinders" = "cyl",
+                    "Transmission" = "am",
+                    "Gears" = "gear")),
+
+      # Input: Checkbox for whether outliers should be included ----
+      # This is an additional feature of this ui that allows a choice to includes outliers or not. This will provide the server with an "input$outliers" value that will return a true or false. The default has been set to true 
+      checkboxInput("outliers", "Show outliers", TRUE)
+
+    ),
+
+    # Main panel for displaying outputs ----
+    mainPanel(  #This defines the main panel (right side in)
+
+      # Output: Formatted text for caption ----
+      h3(textOutput("caption")), #A simple textouput. This means that ui will display the text of the server object "caption"
+
+      # Output: Plot of the requested variable against mpg ----
+      plotOutput("mpgPlot") # plot output. The ui will plot the server object "mpgPlot" 
+
+    )
+  )
+)
+
+```
+
+As you might have seen there are functionally two types of statements in a ui: 
+1) Those that define the options/selection tools (in this case all found in the sidebar panel) 
+2) Those that display server objects (the main panel here). 
+
+This is the typical dynamic between server and ui. The ui will provide option, a user will select those causing the server to update it's calculations, and then the ui displays those server objects now that they have been updated.
+
+Now let's see how the server takes the ui input and changes it's calculations. Fortunately any inputs from the ui will always be defined as "input$insert_ui_defined_name" so they are pretty easy to find in other code and implement in your own.
+
+```{r echo = TRUE,  message = FALSE, warning = FALSE}
+#This first line is crucial and defines your server as recieving ann input and producing an output. This shoudl always be your first line
+server <- function(input, output) { 
+
+  # Compute the formula text ----
+  # This is in a reactive expression since it is shared by the
+  # output$caption and output$mpgPlot functions
+  formulaText <- reactive({ #This is defining a reactive object. A reactive object is one that requires an input and will change depending on the input.
+    paste("mpg ~", input$variable)# In this case the formula this is shown changes depending on the variable of choice.
+  })
+
+  #They defined this earlier in it's own reactive statement because it is used in both of the following portions and limiting the number of time an input must be read in is good practice. You could also replace "formulaText()" in the following sections with "paste("mpg ~", input$variable)" but it would run slightly slower.
+  
+  # Return the formula text for printing as a caption ----
+  output$caption <- renderText({ #This is a render statement meaning it is creating a server object to be sent to the ui. Here it is the formula equation.
+    formulaText() 
+  })
+
+  # Generate a plot of the requested variable against mpg ----
+  # and only exclude outliers if requested
+  output$mpgPlot <- renderPlot({
+    boxplot(as.formula(formulaText()),# Here the boxplot uses the formula provided by the input to make it's graph
+            data = mpgData,
+            outline = input$outliers, # Here they check their true false about including outliers.
+            col = "#75AADB", pch = 19)
+  })
+
+}
+
+```
+
+So the server section does a few things: 
+1) It defines itself as requiring input and producing output
+2) It contains reactive expressions that take in the input (The render functions are also reactive expressions even if they aren't literally called "reactive". Generally all render functions are reactive but not all reactive functions are render plots)
+3) It contains render expressions that produce an output object that the ui can display.
+
+Once you have this set up all you need to do is use the shinyApp function to run it locally. NOTE: YOU MUST MANUALLY CLOSE THE APP TO KEEP RUNNING CODE
+
+```{r echo = TRUE,  message = FALSE, warning = FALSE, eval = FALSE}
+shinyApp(ui, server)
+
+```
+
+Running this should get you exactly the example we already saw minus the bonus explanation shiny provides!
