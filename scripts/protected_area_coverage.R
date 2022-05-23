@@ -2,17 +2,30 @@
 
 ## proected_area_coverage.R
 ### Author: Emily Beckman Bruns
-### Date: 03/21/2022
+### Creation date: 03/21/2022
+### Last updated: 05/23/2022
 
 ### DESCRIPTION:
-# This script ____________________
+## This script calculates protected area coverage for target species using two
+#   methods...
+## 1) point-in-polygon: count number of wild occurrence points that fall within
+#     protected areas polygons
+## 2) polygon intersection (buffer-in-polygon): add 50km buffers around
+#     wild occurrence points, then calculate the buffer area covered by
+#     protected areas polygons (intersection)
+## The script does not run automatically but requires edits and decisions
+#   depending on your target species, the format of your occurrence points, etc.
+## The point-in-polygon method is RAM-intensive on a personal computer, but
+#   relatively fast on a powerful machine (a few minutes on a 129MB server).
+#   In contrast, the polygon intersection method is very memory-intensive and,
+#   depending on the species distribution (smaller dist = faster calc), the
+#   calculation can run a few hours to multiple days.
 
 ### DATA IN:
-### BOUNDARIES
-## Global country boundaries
-#		UIA World Countries Boundaries, UNIGIS Geospatial Education Resources, via
-#		ArcGIS Hub Shapefile
-#		https://hub.arcgis.com/datasets/252471276c9941729543be8789e06e12_0
+### TARGET SPECIES
+## You need a list of target species, which can either be listed verbatim in
+#   this script, or can be read in as a CSV file. If a CSV file, you need at 
+#   least a "species_name_acc" (accepted name) column.
 ### OCCURRENCE POINTS
 ## In situ occurrence points (latitude and longitude in decimal degrees)
 # 	Can use the output from 3-1_refine_occurrence_points.R
@@ -24,10 +37,11 @@
 # 	Can use the output from 3-1_refine_occurrence_points.R, which has a
 #		"database" column that has "Ex_situ" to distinguish the ex situ records
 #		from the rest of the in situ records
+## The workflow below also uses other files that edit the species occurrence
+#   points, but these are optional. They come from the workflow outlined here
+#   https://github.com/MortonArb-CollectionsValue/OccurrencePoints and include:
+#   1) manual_point_edits.csv & 2) target_taxa_with_native_dist.csv
 ### ECOREGIONS
-## Global Ecoregions
-# 	Terrestrial Ecoregions of the World, via WWF (Olson et al., 2001)
-#		https://www.worldwildlife.org/publications/terrestrial-ecoregions-of-the-world
 ## U.S. Ecoregions
 #		EPA Level IV Ecoregions
 #   https://gaftp.epa.gov/EPADataCommons/ORD/Ecoregions/us/us_eco_l4_state_boundaries.zip
@@ -35,12 +49,18 @@
 ## Global PAs
 # 	World Database on Protected Areas (WDPA)
 #		https://www.iucn.org/theme/protected-areas/our-work/world-database-protected-areas
-## U.S. PAs
-#		Protected Areas Database of the United States (PAD-US)
-#   https://www.usgs.gov/programs/gap-analysis-project/science/pad-us-data-download
+### COUNTRY BOUNDARIES
+## Global country boundaries
+#		UIA World Countries Boundaries, UNIGIS Geospatial Education Resources, via
+#		ArcGIS Hub Shapefile
+#		https://hub.arcgis.com/datasets/252471276c9941729543be8789e06e12_0
 
 ### DATA OUT:
-## _______________________
+### CSV with results from analyses, including:
+# species	     | EOO	                      | dist_filter	                                          | num_pt_unthinned                            | km_thin_value                     | num_pt_thinned              | num_pt_in_pa            | per_pt_in_pa          | area_buff                       | area_pa_in_buff            | per_pa_in_buff
+# species name | Extent of Occurrence (km2) | [optional, filter used for countries of distribution] | number of occurrence points before thinning | kilometer value used for thinning | number of pts post-thinning | number of points in PAs | percent of pts in PAs | area of 50km buffers around pts | area of PAs within buffers | percent of buffer area covered by PAs
+### Can also create maps that show examples of PA coverage using the two different
+#   methods for calculating protected area coverage
 
 ################################################################################
 # Load libraries
@@ -254,6 +274,7 @@ aea.proj <- CRS("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-110
 #		which 96% were polygons and 4% points.
 # since the shapefile is large, the source has it split into three;
 #		we will load each
+
 # need to be unzipped the first time
 #unzip(zipfile="WDPA_WDOECM_Mar2022_Public_all_shp/WDPA_WDOECM_Mar2022_Public_all_shp_0.zip",
 #      exdir="WDPA_WDOECM_Mar2022_Public_all_shp_0")
@@ -289,14 +310,6 @@ pa2 <- st_read("WDPA_WDOECM_Mar2022_Public_all_shp_2/WDPA_WDOECM_Mar2022_Public_
 # create list of layers for use later
 pa_layers_sf_aea <- list(pa0,pa1,pa2)
 rm(pa0,pa1,pa2)
-
-# read in shapefile of global ecoregions
-#ecoregions <- readOGR(file.path(main_dir,"inputs","gis_data",
-#	"official","wwf_terr_ecos.shp"))
-
-# read in shapefile of U.S. EPA Level III Ecoregions
-#ecol3 <- readOGR(file.path(main_dir,"inputs","gis_data",
-#	"us_eco_l3/us_eco_l3.shp"))
 
 # read in shapefile of U.S. EPA Level IV Ecoregions
   # spatial polygons
