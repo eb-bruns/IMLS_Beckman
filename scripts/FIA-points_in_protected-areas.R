@@ -176,7 +176,7 @@ fia_pa_summary <- fia_pa %>% group_by(SPCD) %>% count(pt_in_pa) %>% ungroup()
     out_pa <- out_pa %>% rename(count_outside_PA = n)
 fia_pa_summary_full <- full_join(in_pa,out_pa)
 fia_pa_summary_full$proportion_in_PA <- (fia_pa_summary_full$count_in_PA/
-                                           fia_pa_summary_full$count_outside_PA)
+  (fia_pa_summary_full$count_in_PA+fia_pa_summary_full$count_outside_PA))
 head(fia_pa_summary_full)
 
 # write summary table
